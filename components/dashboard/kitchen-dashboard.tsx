@@ -12,7 +12,7 @@ import { MenuManagement } from "@/components/kitchen/menu-management"
 import { WeeklyOverview } from "@/components/kitchen/weekly-overview"
 
 export function KitchenDashboard() {
-  const { weekStatistics, suggestions, loading, getUnreadSuggestionsCount } = useKitchenData()
+  const { weekStatistics, suggestions, loading, getUnreadSuggestionsCount, markSuggestionAsRead, refreshData } = useKitchenData()
   const [activeTab, setActiveTab] = useState("overview")
 
   const unreadCount = getUnreadSuggestionsCount()
@@ -140,7 +140,7 @@ export function KitchenDashboard() {
         </TabsContent>
 
         <TabsContent value="suggestions" className="space-y-6">
-          <SuggestionsInbox suggestions={suggestions} />
+          <SuggestionsInbox suggestions={suggestions} onMarkRead={async (id: string) => { await markSuggestionAsRead(id) }} />
         </TabsContent>
 
         <TabsContent value="menu" className="space-y-6">

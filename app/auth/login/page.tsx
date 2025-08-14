@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Utensils, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useToast } from "@/hooks/use-toast"
+import { useAdminData } from "@/hooks/use-admin-data"
 import Link from "next/link"
 
 export default function LoginPage() {
@@ -21,7 +22,8 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const { login } = useAuth()
+  const { login, user } = useAuth()
+  const { systemSettings } = useAdminData()
   const { toast } = useToast()
   const router = useRouter()
 
@@ -42,7 +44,8 @@ export default function LoginPage() {
       return
     }
 
-    const success = await login(identityNumber, password)
+  // Bakım modunda butonu kapatma, backend admin kontrolü yapacak
+  const success = await login(identityNumber, password)
 
     if (success) {
       toast({
@@ -70,7 +73,7 @@ export default function LoginPage() {
             </div>
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-white">Cafeteria Vote</CardTitle>
+            <CardTitle className="text-2xl font-bold text-white">Seç Ye</CardTitle>
             <CardDescription className="text-gray-300 mt-2">
               Kurumsal yemek oylama sistemine giriş yapın
             </CardDescription>
@@ -78,6 +81,11 @@ export default function LoginPage() {
         </CardHeader>
 
         <CardContent>
+          {systemSettings?.maintenanceMode && (
+            <div className="mb-4 p-3 bg-red-900/40 border border-red-700 rounded text-red-200 text-sm">
+              Sistem bakım modunda. <span className="font-semibold">Sadece admin</span> kullanıcılar giriş yapabilir. Diğer kullanıcılar denediklerinde uyarı alacaktır.
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="identityNumber" className="text-gray-200">
@@ -127,29 +135,25 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-2 shadow-lg transform transition-all duration-200 hover:scale-105"
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-2 shadow-lg transform transition-all duration-200 hover:scale-105 disabled:opacity-60"
               disabled={isLoading}
             >
-              {isLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
+              {isLoading ? (systemSettings?.maintenanceMode ? "Kontrol ediliyor..." : "Giriş yapılıyor...") : (systemSettings?.maintenanceMode ? "Giriş Yap (Bakım)" : "Giriş Yap")}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-400 text-sm">
+          <div className="mt-6 flex flex-col gap-2 text-center text-sm">
+            <p className="text-gray-400">
               Hesabınız yok mu?{" "}
               <Link href="/auth/register" className="text-orange-500 hover:text-orange-400 font-medium">
                 Kayıt olun
               </Link>
             </p>
-          </div>
-
-          <div className="mt-4 p-3 bg-gray-800/50 rounded-lg">
-            <p className="text-xs text-gray-400 mb-2">Demo hesapları:</p>
-            <div className="space-y-1 text-xs text-gray-300">
-              <div>Admin: 99999999999 / Admin!234</div>
-              <div>Mutfak: 11111111111 / Kitchen!123</div>
-              <div>Üye: 22222222222 / Member!123</div>
-            </div>
+            <p>
+              <Link href="/auth/forgot" className="text-gray-400 hover:text-orange-400">
+                Şifremi unuttum
+              </Link>
+            </p>
           </div>
         </CardContent>
       </Card>

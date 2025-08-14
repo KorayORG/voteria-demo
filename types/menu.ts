@@ -24,6 +24,34 @@ export interface WeekMenu {
   createdAt: Date
 }
 
+// Persistent stored menu schema (DB)
+export interface StoredMenuDayDish {
+  name: string
+  description?: string
+  imageUrl?: string
+  tags?: string[]
+}
+
+export interface StoredMenuDay {
+  date: string // ISO date (yyyy-mm-dd)
+  traditional: StoredMenuDayDish | null
+  alternative: StoredMenuDayDish | null
+  // Shift bazlı farklılaşan menüler (opsiyonel). Key: shiftId
+  shifts?: Record<string, { traditional?: StoredMenuDayDish | null; alternative?: StoredMenuDayDish | null }>
+}
+
+export interface StoredMenuDocument {
+  _id?: string
+  weekOfISO: string
+  days: StoredMenuDay[]
+  isPublished: boolean
+  source?: { type: 'manual' | 'pdf-import'; originalFileName?: string; importNotes?: string; meta?: any }
+  createdAt: string
+  createdBy: string
+  updatedAt?: string
+  updatedBy?: string
+}
+
 export interface Shift {
   id: string
   code: string

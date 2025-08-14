@@ -30,72 +30,8 @@ export const defaultShifts: Shift[] = [
   },
 ]
 
-const sampleDishes: Record<string, Dish> = {
-  mercimekCorbasi: {
-    id: "mercimek-corbasi",
-    name: "Mercimek Çorbası",
-    description: "Geleneksel Türk mutfağından besleyici mercimek çorbası",
-    imageUrl: "/mercimek-corbasi.png",
-    tags: ["Çorba", "Sebzeli"],
-    pairTags: { Sıcaklık: "left", Besin: "left" },
-  },
-  kuruFasulye: {
-    id: "kuru-fasulye",
-    name: "Kuru Fasulye",
-    description: "Pilav ile servis edilen geleneksel kuru fasulye",
-    imageUrl: "/kuru-fasulye-pilav.png",
-    tags: ["Ana Yemek", "Geleneksel"],
-    pairTags: { Protein: "left", Besin: "left" },
-  },
-  tavukSote: {
-    id: "tavuk-sote",
-    name: "Tavuk Sote",
-    description: "Sebzeli tavuk sote, pilav ile",
-    imageUrl: "/tavuk-sote-sebzeli.png",
-    tags: ["Ana Yemek", "Protein"],
-    pairTags: { Protein: "right", Besin: "right" },
-  },
-  sebzeYemegi: {
-    id: "sebze-yemegi",
-    name: "Karışık Sebze Yemeği",
-    description: "Mevsim sebzeleri ile hazırlanmış sağlıklı yemek",
-    imageUrl: "/mixed-vegetable-dish.png",
-    tags: ["Ana Yemek", "Sebzeli", "Vegan"],
-    pairTags: { Protein: "right", Besin: "right" },
-  },
-  balik: {
-    id: "balik",
-    name: "Izgara Balık",
-    description: "Taze deniz balığı, salata ile",
-    imageUrl: "/grilled-fish-salad.png",
-    tags: ["Ana Yemek", "Balık", "Omega-3"],
-    pairTags: { Protein: "right", Besin: "left" },
-  },
-  kofte: {
-    id: "kofte",
-    name: "Ev Yapımı Köfte",
-    description: "Bulgur pilavı ile servis edilen köfte",
-    imageUrl: "/homemade-kofte-bulgur.png",
-    tags: ["Ana Yemek", "Et"],
-    pairTags: { Protein: "left", Besin: "left" },
-  },
-  pilav: {
-    id: "pilav",
-    name: "Tereyağlı Pilav",
-    description: "Geleneksel tereyağlı pilav",
-    imageUrl: "/buttery-rice-pilaf.png",
-    tags: ["Yan Yemek", "Temel"],
-    pairTags: { Protein: "right", Besin: "left" },
-  },
-  salata: {
-    id: "salata",
-    name: "Mevsim Salatası",
-    description: "Taze yeşillikler ve mevsim sebzeleri",
-    imageUrl: "/fresh-seasonal-salad.png",
-    tags: ["Salata", "Sebzeli", "Sağlıklı"],
-    pairTags: { Protein: "right", Besin: "right" },
-  },
-}
+// Örnek yemekler kaldırıldı – gerçek menüler eklenecek.
+const sampleDishes: Record<string, Dish> = {}
 
 export function getCurrentWeekMenu(): WeekMenu {
   const today = new Date()
@@ -105,22 +41,13 @@ export function getCurrentWeekMenu(): WeekMenu {
   const weekOfISO = `${monday.getFullYear()}-W${String(Math.ceil(monday.getDate() / 7)).padStart(2, "0")}`
 
   const days = []
-  const dishKeys = Object.keys(sampleDishes)
-
+  // Boş günler (gerçek menü eklenene kadar geleneksel/alternatif null tutulabilir)
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday)
     date.setDate(monday.getDate() + i)
-
-    const traditionalIndex = i % dishKeys.length
-    const alternativeIndex = (i + 1) % dishKeys.length
-
-    days.push({
-      id: `day-${i}`,
-      date,
-      traditional: sampleDishes[dishKeys[traditionalIndex]],
-      alternative: sampleDishes[dishKeys[alternativeIndex]],
-      categoriesSchemaVersion: 1,
-    })
+    // Placeholder null dishes; çağıranlar null kontrolü yapmalı
+    const emptyDish = { id: '', name: 'Menü Yok', tags: [], pairTags: {} as Record<string,'left'|'right'> }
+    days.push({ id: `day-${i}`, date, traditional: emptyDish, alternative: emptyDish, categoriesSchemaVersion: 1 })
   }
 
   return {

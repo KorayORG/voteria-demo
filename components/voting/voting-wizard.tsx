@@ -47,6 +47,22 @@ export function VotingWizard() {
     )
   }
 
+  // If no shifts at all
+  if (!shifts || shifts.length === 0) {
+    return (
+      <div className="p-4 sm:p-6">
+        <Card className="bg-gray-800/60 border-gray-700">
+          <CardContent className="p-6 text-center space-y-3">
+            <h2 className="text-xl font-semibold text-white">Vardiya Bulunamadı</h2>
+            <p className="text-gray-300 text-sm max-w-md mx-auto">
+              Şu anda sistemde tanımlı aktif vardiya yok. Lütfen yetkili / yönetici ile iletişime geçiniz.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   // If no shift selected, show shift selector
   if (!selectedShift) {
     return (
@@ -89,7 +105,7 @@ export function VotingWizard() {
         </p>
       </div>
 
-      <Card className="bg-gray-800/50 border-gray-700 card-3d shadow-3d glass-effect">
+  <Card className="bg-gray-800/50 border-gray-700">
         <CardContent className="p-4 sm:p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -136,7 +152,7 @@ export function VotingWizard() {
         </CardContent>
       </Card>
 
-      <Card className="bg-gray-800/50 border-gray-700 card-3d shadow-3d glass-effect">
+  <Card className="bg-gray-800/50 border-gray-700">
         <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle className="text-lg sm:text-xl lg:text-2xl text-white">
             {weekDays[currentStep]} - {currentDayMenu.date.toLocaleDateString("tr-TR")}

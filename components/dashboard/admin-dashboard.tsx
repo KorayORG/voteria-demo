@@ -20,10 +20,9 @@ import { useAdminData } from "@/hooks/use-admin-data"
 import { UserManagement } from "@/components/admin/user-management"
 import { SystemSettings } from "@/components/admin/system-settings"
 import { ShiftManagement } from "@/components/admin/shift-management"
-import { ExternalAdjustments } from "@/components/admin/external-adjustments"
 import { ThemeManagement } from "@/components/admin/theme-management"
 import { AuditLogs } from "@/components/admin/audit-logs"
-import { CategoryManagement } from "@/components/admin/category-management"
+import { RoleManagement } from "@/components/admin/role-management"
 
 export function AdminDashboard() {
   const { users, systemSettings, auditLogs, themes, loading } = useAdminData()
@@ -138,14 +137,7 @@ export function AdminDashboard() {
             <Clock className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Vardiyalar</span>
           </TabsTrigger>
-          <TabsTrigger value="adjustments" className="data-[state=active]:bg-red-500">
-            <Database className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Ayarlar</span>
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="data-[state=active]:bg-red-500">
-            <Tags className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Kategoriler</span>
-          </TabsTrigger>
+          
           <TabsTrigger value="themes" className="data-[state=active]:bg-red-500">
             <Palette className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Temalar</span>
@@ -221,13 +213,6 @@ export function AdminDashboard() {
           <ShiftManagement />
         </TabsContent>
 
-        <TabsContent value="adjustments" className="space-y-6">
-          <ExternalAdjustments />
-        </TabsContent>
-
-        <TabsContent value="categories" className="space-y-6">
-          <CategoryManagement />
-        </TabsContent>
 
         <TabsContent value="themes" className="space-y-6">
           <ThemeManagement />
@@ -235,6 +220,7 @@ export function AdminDashboard() {
 
         <TabsContent value="system" className="space-y-6">
           <SystemSettings />
+          <RoleManagement />
           <AuditLogs />
         </TabsContent>
       </Tabs>

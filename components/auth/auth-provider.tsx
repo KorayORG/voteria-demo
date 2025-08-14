@@ -65,53 +65,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (identityNumber: string, password: string): Promise<boolean> => {
     try {
       setLoading(true)
-
-      // Mock authentication - in real app, call backend API
-      if (identityNumber === "99999999999" && password === "Admin!234") {
-        const adminUser: User = {
-          id: "1",
-          identityNumber: "99999999999",
-          fullName: "Sistem Yöneticisi",
-          phone: "05551234567",
-          role: "admin",
-          isActive: true,
-        }
-
-        localStorage.setItem("auth_token", "mock_admin_token")
-        localStorage.setItem("user_data", JSON.stringify(adminUser))
-        setUser(adminUser)
-        return true
-      } else if (identityNumber === "11111111111" && password === "Kitchen!123") {
-        const kitchenUser: User = {
-          id: "2",
-          identityNumber: "11111111111",
-          fullName: "Mutfak Sorumlusu",
-          phone: "05551234568",
-          role: "kitchen",
-          isActive: true,
-        }
-
-        localStorage.setItem("auth_token", "mock_kitchen_token")
-        localStorage.setItem("user_data", JSON.stringify(kitchenUser))
-        setUser(kitchenUser)
-        return true
-      } else if (identityNumber === "22222222222" && password === "Member!123") {
-        const memberUser: User = {
-          id: "3",
-          identityNumber: "22222222222",
-          fullName: "Test Üyesi",
-          phone: "05551234569",
-          role: "member",
-          isActive: true,
-        }
-
-        localStorage.setItem("auth_token", "mock_member_token")
-        localStorage.setItem("user_data", JSON.stringify(memberUser))
-        setUser(memberUser)
-        return true
-      }
-
-      return false
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identityNumber, password }),
+      })
+      if (!res.ok) return false
+      const data = await res.json()
+      if (!data.success) return false
+      localStorage.setItem("auth_token", data.token)
+      localStorage.setItem("user_data", JSON.stringify(data.user))
+      setUser(data.user)
+      return true
     } catch (error) {
       console.error("Login failed:", error)
       return false
@@ -123,18 +88,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (data: RegisterData): Promise<boolean> => {
     try {
       setLoading(true)
-
-      // Mock registration - in real app, call backend API
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) return false
+      const resp = await res.json()
+      if (!resp.success) return false
       const newUser: User = {
-        id: Date.now().toString(),
+        id: resp.userId,
         identityNumber: data.identityNumber,
         fullName: data.fullName,
         phone: data.phone,
         role: "member",
         isActive: true,
       }
-
-      localStorage.setItem("auth_token", `mock_token_${newUser.id}`)
+      localStorage.setItem("auth_token", `tok_${resp.userId}`)
       localStorage.setItem("user_data", JSON.stringify(newUser))
       setUser(newUser)
       return true
@@ -150,6 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("auth_token")
     localStorage.removeItem("user_data")
     setUser(null)
+  fetch('/api/auth/logout', { method:'POST' })
     router.push("/auth/login")
   }
 

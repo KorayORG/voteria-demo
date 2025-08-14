@@ -1,5 +1,5 @@
 import type { User } from "@/components/auth/auth-provider"
-import type { SystemSettings, ExternalAdjustment, AuditLog, CategorySchema, Theme } from "@/types/admin"
+import type { SystemSettings, ExternalAdjustment, AuditLog, Theme } from "@/types/admin"
 import { defaultShifts } from "./menu-data"
 
 // Mock admin data
@@ -55,7 +55,7 @@ export function generateMockUsers(): User[] {
 export function getSystemSettings(): SystemSettings {
   return {
     id: "system-1",
-    siteTitle: "Cafeteria Vote - Kurumsal Yemek Oylama Sistemi",
+  siteTitle: "Seç Ye - Kurumsal Yemek Oylama Sistemi",
     maintenanceMode: false,
     voteCutoffTime: "09:00",
     activeTheme: "default",
@@ -121,30 +121,6 @@ export function generateMockExternalAdjustments(): ExternalAdjustment[] {
   return adjustments
 }
 
-export function getCategorySchema(): CategorySchema {
-  return {
-    id: "schema-1",
-    mutualPairs: [
-      { key: "Sıcaklık", left: "Sıcak", right: "Soğuk" },
-      { key: "Protein", left: "Etli", right: "Etsiz" },
-      { key: "Acılık", left: "Acılı", right: "Acısız" },
-    ],
-    singleTags: [
-      "Vegan",
-      "Sebzeli",
-      "Balık",
-      "Tavuk",
-      "Çorba",
-      "Ana Yemek",
-      "Salata",
-      "Tatlı",
-      "Sağlıklı",
-      "Geleneksel",
-    ],
-    version: 1,
-    createdAt: new Date("2024-01-01"),
-  }
-}
 
 export function getAvailableThemes(): Theme[] {
   return [
@@ -153,6 +129,13 @@ export function getAvailableThemes(): Theme[] {
       code: "default",
       name: "Varsayılan Tema",
       isActive: true,
+    },
+    {
+      id: "theme-5",
+      code: "republic-day",
+      name: "Cumhuriyet Bayramı",
+      isActive: false,
+      assets: { primaryColor: "#E30A17", accentColor: "#FFFFFF" }, // Türk bayrağı kırmızı & beyaz
     },
     {
       id: "theme-2",

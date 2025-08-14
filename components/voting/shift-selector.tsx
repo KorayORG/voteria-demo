@@ -23,11 +23,11 @@ export function ShiftSelector({ shifts, onSelectShift }: ShiftSelectorProps) {
         {shifts.map((shift) => (
           <Card
             key={shift.id}
-            className="bg-gray-800/50 border-gray-700 card-3d shadow-3d hover:bg-gray-700/50 transition-all duration-200 cursor-pointer group"
+            className="bg-gray-800/50 border-gray-700 cursor-pointer group"
             onClick={() => onSelectShift(shift)}
           >
             <CardHeader className="text-center pb-3">
-              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Clock className="h-8 w-8 text-white" />
               </div>
               <CardTitle className="text-lg text-white">{shift.label}</CardTitle>
@@ -46,11 +46,8 @@ export function ShiftSelector({ shifts, onSelectShift }: ShiftSelectorProps) {
               </div>
 
               <Button
-                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 transform transition-all duration-200 hover:scale-105"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onSelectShift(shift)
-                }}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500"
+                onClick={(e) => { e.stopPropagation(); onSelectShift(shift) }}
               >
                 Bu Vardiyayı Seç
               </Button>

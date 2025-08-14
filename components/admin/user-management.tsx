@@ -25,7 +25,7 @@ import type { User } from "@/components/auth/auth-provider"
 import { useToast } from "@/hooks/use-toast"
 
 export function UserManagement() {
-  const { users, createUser, updateUser, deleteUser, userCreationCooldown } = useAdminData()
+  const { users, roles, createUser, updateUser, deleteUser, userCreationCooldown } = useAdminData()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
@@ -37,7 +37,7 @@ export function UserManagement() {
     identityNumber: "",
     fullName: "",
     phone: "",
-    role: "member" as User["role"],
+    roleId: "",
     isActive: true,
   })
 
@@ -54,7 +54,7 @@ export function UserManagement() {
   })
 
   const handleCreateUser = async () => {
-    if (!newUser.identityNumber || !newUser.fullName || !newUser.phone) {
+  if (!newUser.identityNumber || !newUser.fullName || !newUser.phone) {
       toast({
         title: "Hata",
         description: "Lütfen tüm alanları doldurun",
@@ -81,20 +81,19 @@ export function UserManagement() {
       return
     }
 
-    const success = await createUser(newUser)
+  const payload: any = { ...newUser }
+  if (!payload.roleId) delete payload.roleId
+  // backend geriye dönük uyum için role alanı isterse roleId eşleşen code'ya göre doldururuz
+  const selectedRole = roles.find(r => r.id === payload.roleId)
+  if (selectedRole) payload.role = selectedRole.code || 'member'
+  const success = await createUser(payload)
 
     if (success) {
       toast({
         title: "Başarılı",
         description: "Kullanıcı başarıyla oluşturuldu",
       })
-      setNewUser({
-        identityNumber: "",
-        fullName: "",
-        phone: "",
-        role: "member",
-        isActive: true,
-      })
+  setNewUser({ identityNumber: "", fullName: "", phone: "", roleId: "", isActive: true })
       setIsCreateDialogOpen(false)
     } else {
       toast({
@@ -235,20 +234,11 @@ export function UserManagement() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="role" className="text-gray-200">
-                      Rol
-                    </Label>
-                    <Select
-                      value={newUser.role}
-                      onValueChange={(value) => setNewUser((prev) => ({ ...prev, role: value as User["role"] }))}
-                    >
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-700 border-gray-600">
-                        <SelectItem value="member">Üye</SelectItem>
-                        <SelectItem value="kitchen">Mutfak</SelectItem>
-                        <SelectItem value="admin">Yönetici</SelectItem>
+                    <Label className="text-gray-200">Rol</Label>
+                    <Select value={newUser.roleId || undefined} onValueChange={(value) => setNewUser(prev => ({ ...prev, roleId: value }))}>
+                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white"><SelectValue placeholder="Rol seç" /></SelectTrigger>
+                      <SelectContent className="bg-gray-700 border-gray-600 max-h-72 overflow-y-auto">
+                        {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -372,7 +362,11 @@ export function UserManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setEditingUser(user)}
+                          onClick={() => {
+                            // Eski kullanıcıda roleId yoksa role code -> roleId eşle
+                            const derivedRoleId = (user as any).roleId || roles.find(r => r.code === user.role)?.id
+                            setEditingUser({ ...(user as any), roleId: derivedRoleId })
+                          }}
                           className="border-gray-600 text-gray-300 bg-transparent"
                         >
                           <Edit className="h-3 w-3" />
@@ -457,26 +451,26 @@ export function UserManagement() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-gray-200">Rol</Label>
-                <Select
-                  value={editingUser.role}
-                  onValueChange={(value) => setEditingUser({ ...editingUser, role: value as User["role"] })}
-                >
-                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-700 border-gray-600">
-                    <SelectItem value="member">Üye</SelectItem>
-                    <SelectItem value="kitchen">Mutfak</SelectItem>
-                    <SelectItem value="admin">Yönetici</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label className="text-gray-200">Rol</Label>
+                  <Select
+                    value={(editingUser as any).roleId || roles.find(r => r.code === editingUser.role)?.id || undefined}
+                    onValueChange={(value) =>
+                      setEditingUser((prev) => (prev ? { ...(prev as any), roleId: value } : prev))
+                    }
+                  >
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white"><SelectValue placeholder="Rol seç" /></SelectTrigger>
+                    <SelectContent className="bg-gray-700 border-gray-600 max-h-72 overflow-y-auto">
+                      {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-4">
                 <Button
-                  onClick={() => handleUpdateUser(editingUser.id, editingUser)}
+                  onClick={() => handleUpdateUser(editingUser.id, editingUser as any)}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   Güncelle

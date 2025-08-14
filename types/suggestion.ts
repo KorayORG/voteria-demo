@@ -14,6 +14,8 @@ export interface Suggestion {
   attachments?: string[]
   votes: number
   tags: string[]
+  // Backend'ten gelen kullanıcıya özel alan: mevcut kullanıcı oy vermiş mi
+  userHasVoted?: boolean
 }
 
 export type SuggestionCategory = "menu" | "service" | "facility" | "hygiene" | "equipment" | "other"

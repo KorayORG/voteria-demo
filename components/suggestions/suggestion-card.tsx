@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ThumbsUp, Calendar, User, MessageSquare } from "lucide-react"
 import { categoryLabels, priorityLabels, statusLabels, priorityColors, statusColors } from "@/lib/suggestion-data"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface SuggestionCardProps {
   suggestion: Suggestion
@@ -14,8 +14,12 @@ interface SuggestionCardProps {
 }
 
 export function SuggestionCard({ suggestion, onVote }: SuggestionCardProps) {
-  const [hasVoted, setHasVoted] = useState(false)
+  const [hasVoted, setHasVoted] = useState<boolean>(suggestion.userHasVoted || false)
   const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    setHasVoted(suggestion.userHasVoted || false)
+  }, [suggestion.userHasVoted])
 
   const handleVote = () => {
     if (!hasVoted) {

@@ -56,12 +56,12 @@ export function ThemeManagement() {
             {themes.map((theme) => (
               <Card
                 key={theme.id}
-                className={`border-2 transition-all duration-200 cursor-pointer card-3d shadow-3d ${
+                onClick={() => { if(!theme.isActive) handleActivateTheme(theme.code) }}
+                className={`border-2 card-3d shadow-3d transition-colors duration-200 ${
                   theme.isActive
                     ? "border-purple-500 bg-purple-500/10"
-                    : "border-gray-600 bg-gray-700/50 hover:border-purple-400"
+                    : "border-gray-600 bg-gray-700/50 hover:border-purple-400 cursor-pointer"
                 }`}
-                onClick={() => !theme.isActive && handleActivateTheme(theme.code)}
               >
                 <CardContent className="p-6 text-center">
                   <div className="relative">
@@ -98,10 +98,7 @@ export function ThemeManagement() {
                   {!theme.isActive && (
                     <Button
                       className="w-full mt-4 bg-purple-600 hover:bg-purple-700"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleActivateTheme(theme.code)
-                      }}
+                      onClick={() => handleActivateTheme(theme.code)}
                     >
                       Temayı Uygula
                     </Button>

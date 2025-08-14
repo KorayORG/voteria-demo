@@ -4,6 +4,9 @@ export interface SystemSettings {
   maintenanceMode: boolean
   voteCutoffTime?: string
   activeTheme: string
+  paletteSize?: number
+  paletteColors?: string[]
+  texts?: Record<string, string>
   createdAt: Date
   updatedAt: Date
 }
@@ -23,22 +26,14 @@ export interface AuditLog {
   id: string
   actorId: string
   actorName: string
+  actorIdentityNumber?: string
   action: string
   entity: string
   entityId?: string
+  targetId?: string
+  targetName?: string
+  targetIdentityNumber?: string
   meta?: Record<string, any>
-  createdAt: Date
-}
-
-export interface CategorySchema {
-  id: string
-  mutualPairs: Array<{
-    key: string
-    left: string
-    right: string
-  }>
-  singleTags: string[]
-  version: number
   createdAt: Date
 }
 
@@ -48,4 +43,22 @@ export interface Theme {
   name: string
   isActive: boolean
   assets?: Record<string, string>
+}
+
+export interface RolePermissionSet {
+  canVote: boolean
+  kitchenView: boolean
+  kitchenManage: boolean
+  isAdmin: boolean
+}
+
+export interface RoleDef {
+  id: string
+  name: string
+  code?: string
+  color?: string
+  order: number
+  permissions: RolePermissionSet
+  createdAt: Date
+  updatedAt: Date
 }

@@ -27,18 +27,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     ...(user?.role === "admin" ? [{ label: "Admin", href: "/admin" }] : []),
   ]
 
+  const disableMotion = pathname.startsWith('/admin')
   return (
-    <div className="min-h-screen layered-bg">
-      <header className="nav-3d sticky top-0 z-50">
+    <div className={`min-h-screen layered-bg ${disableMotion ? 'admin-static' : ''}`}>
+  <header className={`sticky top-0 z-50 ${disableMotion ? 'bg-gray-900/80 border-b border-gray-800' : 'nav-3d'}`}>
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-3 floating-element">
+            <Link href="/dashboard" className={`flex items-center gap-3 ${disableMotion ? '' : 'floating-element'}`}>
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
-                  <Utensils className="h-6 w-6 text-orange-500 text-glow" />
-                  <Utensils className="h-6 w-6 text-orange-500 rotate-45 text-glow" />
-                </div>
-                <h1 className="text-xl font-bold text-white text-glow">Cafeteria Vote</h1>
+                  <Utensils className={`h-6 w-6 text-orange-500 ${disableMotion ? '' : 'text-glow'}`} />
+                    <Utensils className={`h-6 w-6 text-orange-500 rotate-45 ${disableMotion ? '' : 'text-glow'}`} />
+                  </div>
+                  <h1 className={`text-xl font-bold text-white ${disableMotion ? '' : 'text-glow'}`}>Seç Ye</h1>
               </div>
             </Link>
 
@@ -48,7 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`text-sm font-medium transition-all duration-300 button-3d px-3 py-2 rounded-lg ${
+                  className={`text-sm font-medium px-3 py-2 rounded-lg ${disableMotion ? 'bg-gray-800/40 hover:bg-gray-700/60' : 'transition-all duration-300 button-3d'} ${
                     pathname === item.href
                       ? "text-orange-500 bg-orange-500/10 border-glow"
                       : "text-gray-300 hover:text-white glass-effect-light"
@@ -61,7 +62,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* User Menu */}
             <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-3 glass-effect-light rounded-lg p-2">
+              <div className={`hidden md:flex items-center gap-3 rounded-lg p-2 ${disableMotion ? 'bg-gray-800/60 border border-gray-700' : 'glass-effect-light'}`}>
                 <div className="text-right">
                   <div className="text-sm font-medium text-white">{user?.fullName}</div>
                   <div className="text-xs text-gray-400 capitalize">{user?.role}</div>
@@ -77,7 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 variant="ghost"
                 size="sm"
                 onClick={logout}
-                className="text-gray-300 hover:text-white hover:bg-gray-700/50 button-3d glass-effect-light"
+                className={`text-gray-300 hover:text-white hover:bg-gray-700/50 ${disableMotion ? '' : 'button-3d glass-effect-light'}`}
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden md:inline ml-2">Çıkış</span>
@@ -87,7 +88,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:hidden text-gray-300 hover:text-white button-3d"
+                className={`md:hidden text-gray-300 hover:text-white ${disableMotion ? '' : 'button-3d'}`}
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

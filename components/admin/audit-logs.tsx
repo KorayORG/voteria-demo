@@ -42,9 +42,21 @@ export function AuditLogs() {
                     <span className="text-sm text-gray-400">{log.entity}</span>
                   </div>
 
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 text-sm flex-wrap">
                     <User className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-white">{log.actorName}</span>
+                    <span className="text-white font-medium">{log.actorName}</span>
+                    {log.actorIdentityNumber && (
+                      <span className="text-xs text-gray-400">({log.actorIdentityNumber})</span>
+                    )}
+                    {log.targetName && (
+                      <>
+                        <span className="text-gray-500">→</span>
+                        <span className="text-blue-300 font-medium">{log.targetName}</span>
+                        {log.targetIdentityNumber && (
+                          <span className="text-xs text-gray-400">({log.targetIdentityNumber})</span>
+                        )}
+                      </>
+                    )}
                   </div>
 
                   {log.meta && Object.keys(log.meta).length > 0 && (

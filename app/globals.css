@@ -392,6 +392,21 @@
   border-radius: 4px;
 }
 
+/* Disable animations & transforms specifically inside menu management page */
+.menu-management-static * {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Admin panelde animasyonları tamamen kapatma */
+.admin-static *, .admin-static *::before, .admin-static *::after {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 /* Loading states with better mobile performance */
 .loading-shimmer {
   background: linear-gradient(

@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Utensils, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useToast } from "@/hooks/use-toast"
+import { useAdminData } from "@/hooks/use-admin-data"
 import Link from "next/link"
 
 export default function RegisterPage() {
@@ -27,6 +28,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const { register } = useAuth()
+  const { systemSettings } = useAdminData()
   const { toast } = useToast()
   const router = useRouter()
 
@@ -78,6 +80,11 @@ export default function RegisterPage() {
 
     setIsLoading(true)
 
+    if (systemSettings?.maintenanceMode) {
+      setError("Sistem bakım modunda. Kayıt geçici olarak devre dışı.")
+      setIsLoading(false)
+      return
+    }
     const success = await register({
       identityNumber: formData.identityNumber,
       fullName: formData.fullName,
@@ -117,6 +124,11 @@ export default function RegisterPage() {
         </CardHeader>
 
         <CardContent>
+          {systemSettings?.maintenanceMode && (
+            <div className="mb-4 p-3 bg-red-900/40 border border-red-700 rounded text-red-200 text-sm">
+              Sistem bakım modunda. Kayıt işlemleri kapalı.
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="identityNumber" className="text-gray-200">
@@ -215,7 +227,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-2 shadow-lg transform transition-all duration-200 hover:scale-105"
-              disabled={isLoading}
+              disabled={isLoading || !!systemSettings?.maintenanceMode}
             >
               {isLoading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
             </Button>

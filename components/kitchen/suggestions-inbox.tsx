@@ -11,9 +11,10 @@ import { useKitchenData } from "@/hooks/use-kitchen-data"
 
 interface SuggestionsInboxProps {
   suggestions: Suggestion[]
+  onMarkRead?: (id: string) => void | Promise<void>
 }
 
-export function SuggestionsInbox({ suggestions }: SuggestionsInboxProps) {
+export function SuggestionsInbox({ suggestions, onMarkRead }: SuggestionsInboxProps) {
   const { markSuggestionAsRead } = useKitchenData()
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null)
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all")
@@ -29,7 +30,8 @@ export function SuggestionsInbox({ suggestions }: SuggestionsInboxProps) {
   const handleSuggestionClick = (suggestion: Suggestion) => {
     setSelectedSuggestion(suggestion)
     if (!suggestion.isRead) {
-      markSuggestionAsRead(suggestion.id)
+      if (onMarkRead) onMarkRead(suggestion.id)
+      else markSuggestionAsRead(suggestion.id)
     }
   }
 
@@ -173,7 +175,7 @@ export function SuggestionsInbox({ suggestions }: SuggestionsInboxProps) {
                     <Button
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
-                      onClick={() => markSuggestionAsRead(selectedSuggestion.id)}
+                      onClick={() => (onMarkRead ? onMarkRead(selectedSuggestion.id) : markSuggestionAsRead(selectedSuggestion.id))}
                       disabled={selectedSuggestion.isRead}
                     >
                       <Check className="h-4 w-4 mr-2" />

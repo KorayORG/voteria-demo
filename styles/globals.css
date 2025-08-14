@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
+/* Removed @custom-variant dark as it is not standard CSS. Use .dark selector for dark mode styles. */
 
 :root {
   --background: oklch(1 0 0);
@@ -74,7 +74,7 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
-@theme inline {
+:root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -115,9 +115,82 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
+
+/* Özel Gün Temaları */
+.theme-republic-day {
+  --primary: #E30A17;
+  --primary-foreground: #ffffff;
+  --accent: #ffffff;
+  --accent-foreground: #E30A17;
+  --background: #1a1a1a;
+  --card: #222222;
+  --popover: #222222;
+  --border: #3a3a3a;
+  --ring: #E30A17;
+}
+
+.theme-ramadan {
+  --primary: #8B5CF6;
+  --primary-foreground: #ffffff;
+  --accent: #F59E0B;
+  --accent-foreground: #1a1a1a;
+  --background: #141026;
+  --card: #1d1833;
+  --popover: #1d1833;
+  --border: #2d2349;
+  --ring: #8B5CF6;
+}
+
+body.theme-ramadan {
+  /* Katmanlı manevi gece hissi ve yıldız efekti */
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle at 20% 25%, rgba(245,158,11,0.12), transparent 60%),
+    radial-gradient(circle at 80% 70%, rgba(139,92,246,0.18), transparent 65%),
+    repeating-radial-gradient(circle at 50% 40%, rgba(255,255,255,0.18) 0 1px, transparent 2px 40px),
+    linear-gradient(145deg,#0f0b20,#1a1533 55%,#241a40);
+  background-blend-mode: screen, normal, lighten, normal;
+}
+
+.theme-newyear {
+  --primary: #EF4444;
+  --primary-foreground: #ffffff;
+  --accent: #10B981;
+  --accent-foreground: #ffffff;
+  --background: #101418;
+  --card: #182026;
+  --popover: #182026;
+  --border: #27323a;
+  --ring: #EF4444;
+}
+
+.theme-spring {
+  --primary: #10B981;
+  --primary-foreground: #ffffff;
+  --accent: #F59E0B;
+  --accent-foreground: #1a1a1a;
+  --background: #0f1a14;
+  --card: #16231c;
+  --popover: #16231c;
+  --border: #223329;
+  --ring: #10B981;
+}
+
+@keyframes float-slow { 0% { transform: translateY(0); } 50% { transform: translateY(8px); } 100% { transform: translateY(0); } }
+.animate-float-slow { animation: float-slow 4.8s ease-in-out infinite; }
+
+@keyframes lantern-drift-fade {
+  0% { opacity: 0; transform: translate(-50%, -50%) translate(0,0); }
+  10% { opacity: var(--o); }
+  80% { opacity: var(--o); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--dx), var(--dy)); }
+}
+.lantern-anim { animation: lantern-drift-fade var(--dur) linear forwards; animation-delay: var(--delay); position: absolute; }
