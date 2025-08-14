@@ -55,7 +55,7 @@ export function generateMockUsers(): User[] {
 export function getSystemSettings(): SystemSettings {
   return {
     id: "system-1",
-  siteTitle: "Seç Ye - Kurumsal Yemek Oylama Sistemi",
+    siteTitle: "Seç Ye - Kurumsal Yemek Oylama Sistemi",
     maintenanceMode: false,
     voteCutoffTime: "09:00",
     activeTheme: "default",
@@ -121,7 +121,6 @@ export function generateMockExternalAdjustments(): ExternalAdjustment[] {
   return adjustments
 }
 
-
 export function getAvailableThemes(): Theme[] {
   return [
     {
@@ -131,32 +130,109 @@ export function getAvailableThemes(): Theme[] {
       isActive: true,
     },
     {
-      id: "theme-5",
+      id: "theme-ramadan",
+      code: "ramadan-bayram",
+      name: "Ramazan Bayramı",
+      isActive: false,
+      assets: { primaryColor: "#8B5CF6", accentColor: "#F59E0B" }, // Mor ve altın
+    },
+    {
+      id: "theme-kurban",
+      code: "kurban-bayram",
+      name: "Kurban Bayramı",
+      isActive: false,
+      assets: { primaryColor: "#059669", accentColor: "#D97706" }, // Yeşil ve turuncu
+    },
+    {
+      id: "theme-republic",
       code: "republic-day",
-      name: "Cumhuriyet Bayramı",
+      name: "29 Ekim Cumhuriyet Bayramı",
       isActive: false,
-      assets: { primaryColor: "#E30A17", accentColor: "#FFFFFF" }, // Türk bayrağı kırmızı & beyaz
+      assets: { primaryColor: "#DC2626", accentColor: "#FFFFFF" }, // Kırmızı ve beyaz
     },
     {
-      id: "theme-2",
-      code: "ramadan",
-      name: "Ramazan Teması",
+      id: "theme-victory",
+      code: "victory-day",
+      name: "30 Ağustos Zafer Bayramı",
       isActive: false,
-      assets: { primaryColor: "#8B5CF6", accentColor: "#F59E0B" },
+      assets: { primaryColor: "#B91C1C", accentColor: "#FCD34D" }, // Koyu kırmızı ve altın
     },
     {
-      id: "theme-3",
-      code: "newyear",
-      name: "Yılbaşı Teması",
+      id: "theme-children",
+      code: "children-day",
+      name: "23 Nisan Ulusal Egemenlik ve Çocuk Bayramı",
       isActive: false,
-      assets: { primaryColor: "#EF4444", accentColor: "#10B981" },
+      assets: { primaryColor: "#3B82F6", accentColor: "#F59E0B" }, // Mavi ve turuncu
     },
     {
-      id: "theme-4",
+      id: "theme-labor",
+      code: "labor-day",
+      name: "1 Mayıs İşçi ve Emekçi Bayramı",
+      isActive: false,
+      assets: { primaryColor: "#DC2626", accentColor: "#374151" }, // Kırmızı ve gri
+    },
+    {
+      id: "theme-youth",
+      code: "youth-day",
+      name: "19 Mayıs Atatürk'ü Anma, Gençlik ve Spor Bayramı",
+      isActive: false,
+      assets: { primaryColor: "#059669", accentColor: "#FFFFFF" }, // Yeşil ve beyaz
+    },
+    {
+      id: "theme-newyear",
+      code: "new-year",
+      name: "Yılbaşı",
+      isActive: false,
+      assets: { primaryColor: "#DC2626", accentColor: "#059669" }, // Kırmızı ve yeşil
+    },
+    {
+      id: "theme-teachers",
+      code: "teachers-day",
+      name: "24 Kasım Öğretmenler Günü",
+      isActive: false,
+      assets: { primaryColor: "#7C3AED", accentColor: "#F59E0B" }, // Mor ve altın
+    },
+    {
+      id: "theme-mothers",
+      code: "mothers-day",
+      name: "Anneler Günü",
+      isActive: false,
+      assets: { primaryColor: "#EC4899", accentColor: "#FBBF24" }, // Pembe ve altın
+    },
+    {
+      id: "theme-fathers",
+      code: "fathers-day",
+      name: "Babalar Günü",
+      isActive: false,
+      assets: { primaryColor: "#1F2937", accentColor: "#3B82F6" }, // Koyu gri ve mavi
+    },
+    {
+      id: "theme-spring",
       code: "spring",
       name: "Bahar Teması",
       isActive: false,
-      assets: { primaryColor: "#10B981", accentColor: "#F59E0B" },
+      assets: { primaryColor: "#059669", accentColor: "#F59E0B" }, // Yeşil ve turuncu
+    },
+    {
+      id: "theme-summer",
+      code: "summer",
+      name: "Yaz Teması",
+      isActive: false,
+      assets: { primaryColor: "#F59E0B", accentColor: "#3B82F6" }, // Turuncu ve mavi
+    },
+    {
+      id: "theme-autumn",
+      code: "autumn",
+      name: "Sonbahar Teması",
+      isActive: false,
+      assets: { primaryColor: "#D97706", accentColor: "#B91C1C" }, // Turuncu ve kırmızı
+    },
+    {
+      id: "theme-winter",
+      code: "winter",
+      name: "Kış Teması",
+      isActive: false,
+      assets: { primaryColor: "#1E40AF", accentColor: "#E5E7EB" }, // Mavi ve açık gri
     },
   ]
 }
