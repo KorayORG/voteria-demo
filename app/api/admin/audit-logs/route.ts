@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import clientPromise, { tryGetDb } from "@/lib/mongodb";
+import { resolveTenant } from '@/lib/tenant'
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "100", 10);
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
+    const tenant = resolveTenant()
+    const db = await tryGetDb()
+    if (!db) {
+      return NextResponse.json({ logs: [], degraded: true })
+    }
     const logs = await db
       .collection("audit_logs")
-      .find({})
+      .find({ $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] })
       .sort({ createdAt: -1 })
       .limit(limit)
       .toArray();

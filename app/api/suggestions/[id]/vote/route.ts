@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { parseUserFromHeaders } from "@/lib/auth-headers";
 import { ObjectId } from "mongodb";
+import { resolveTenant } from '@/lib/tenant'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -13,10 +14,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: 'Bu işlem yalnızca üyeler için' }, { status: 403 });
     }
     const { id } = params;
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
+  const tenant = resolveTenant()
+  const client = await clientPromise;
+  const db = client.db();
     const col = db.collection("suggestions");
-    const suggestion = await col.findOne({ _id: new ObjectId(id) });
+  const suggestion = await col.findOne({ _id: new ObjectId(id), $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] });
     if (!suggestion) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     const hasVoted = suggestion.voterIds?.includes(userId);
     if (hasVoted) {
@@ -24,8 +26,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ success: true, already: true });
     }
     await col.updateOne(
-      { _id: new ObjectId(id) },
-      { $addToSet: { voterIds: userId }, $inc: { votesCount: 1 } }
+      { _id: new ObjectId(id), $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] },
+      { $addToSet: { voterIds: userId }, $inc: { votesCount: 1 }, $set: { tenantId: tenant.tenantId } }
     );
     return NextResponse.json({ success: true, already: false });
   } catch (e) {

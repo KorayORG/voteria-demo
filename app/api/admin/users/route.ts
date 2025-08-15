@@ -3,13 +3,16 @@ import clientPromise from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 import { parseUserFromHeaders } from "@/lib/auth-headers";
 import { ObjectId } from "mongodb";
+import { resolveTenant } from '@/lib/tenant'
+import { addAuditLog } from '@/lib/audit'
 
 // GET: list all users
 export async function GET() {
   try {
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
-    const users = await db.collection("users").find({}).sort({ createdAt: -1 }).toArray();
+  const tenant = resolveTenant()
+  const client = await clientPromise;
+  const db = client.db();
+  const users = await db.collection("users").find({ $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] }).sort({ createdAt: -1 }).toArray();
     return NextResponse.json({ users });
   } catch (e) {
     console.error("GET /api/admin/users error", e);
@@ -28,11 +31,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Zorunlu alanlar eksik" }, { status: 400 });
     }
 
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
+  const tenant = resolveTenant()
+  const client = await clientPromise;
+  const db = client.db();
     const usersCol = db.collection("users");
 
-    const existing = await usersCol.findOne({ $or: [{ identityNumber }, { phone }] });
+  const existing = await usersCol.findOne({ tenantId: tenant.tenantId, $or: [{ identityNumber }, { phone }] });
     if (existing) {
       return NextResponse.json({ error: "Kimlik numarası veya telefon kayıtlı" }, { status: 409 });
     }
@@ -48,6 +52,7 @@ export async function POST(req: NextRequest) {
       activeTo: body.activeTo ? new Date(body.activeTo) : undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
+      tenantId: tenant.tenantId,
     };
 
     if (password) {
@@ -61,7 +66,7 @@ export async function POST(req: NextRequest) {
       const actorUser = await usersCol.findOne({ _id: new ObjectId(headerCtx.userId) }).catch(()=>null)
       if (actorUser) actorIdentityNumber = (actorUser as any).identityNumber
     }
-    await db.collection("audit_logs").insertOne({
+    await addAuditLog({
       actorId: headerCtx.userId || body.actorId || "system",
       actorName: body.actorName || "Sistem",
       actorIdentityNumber,
@@ -72,7 +77,7 @@ export async function POST(req: NextRequest) {
       targetName: fullName,
       targetIdentityNumber: identityNumber,
       meta: { identityNumber, role, roleId },
-      createdAt: new Date(),
+      tenantId: tenant.tenantId
     });
 
     return NextResponse.json({ userId: result.insertedId });

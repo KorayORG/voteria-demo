@@ -3,6 +3,7 @@ import clientPromise from '@/lib/mongodb'
 import { parseUserFromHeaders, requireRole } from '@/lib/auth-headers'
 import { addAuditLog } from '@/lib/audit'
 import { ObjectId } from 'mongodb'
+import { resolveTenant } from '@/lib/tenant'
 
 const COLLECTION = 'menus'
 
@@ -11,10 +12,13 @@ export async function GET(req: Request) {
   const week = searchParams.get('week')
   const shiftId = searchParams.get('shift')
   try {
+    const tenant = resolveTenant()
     const client = await clientPromise
     const db = client.db()
-    const query: any = {}
-    if (week) query.weekOfISO = week
+    const base: any = {}
+    if (week) base.weekOfISO = week
+    // Backward compatibility: include legacy docs without tenantId
+    const query: any = { ...base, $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] }
     const docs = await db.collection(COLLECTION).find(query).sort({ weekOfISO: 1 }).toArray()
     // Eğer shift parametresi varsa, days içindeki base değerleri shift override ile birleştir
     const menus = docs.map((doc: any) => {
@@ -41,6 +45,7 @@ export async function POST(req: Request) {
   const authz = requireRole(ctx, ['admin','kitchen'])
   if (!authz.ok) return NextResponse.json({ error: authz.error }, { status: 403 })
   try {
+    const tenant = resolveTenant()
     const body = await req.json()
   const { weekOfISO, days, isPublished=false, source } = body || {}
     if (!weekOfISO || !Array.isArray(days) || days.length === 0) {
@@ -63,14 +68,15 @@ export async function POST(req: Request) {
       createdAt: new Date().toISOString(),
       createdBy: ctx.userId || 'system',
       updatedAt: new Date().toISOString(),
-      updatedBy: ctx.userId || 'system'
+      updatedBy: ctx.userId || 'system',
+      tenantId: tenant.tenantId
     }
     const client = await clientPromise
     const db = client.db()
-    await db.collection(COLLECTION).updateOne({ weekOfISO }, { $set: doc }, { upsert: true })
+    await db.collection(COLLECTION).updateOne({ weekOfISO, $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] }, { $set: doc }, { upsert: true })
     let actorIdentityNumber: string | undefined
     if (ctx.userId) {
-      try { const client2 = await clientPromise; const db2 = client2.db('cafeteria'); const au = await db2.collection('users').findOne({ _id: new ObjectId(ctx.userId) }); if (au) actorIdentityNumber = (au as any).identityNumber } catch {}
+      try { const au = await db.collection('users').findOne({ _id: new ObjectId(ctx.userId) }); if (au) actorIdentityNumber = (au as any).identityNumber } catch {}
     }
     await addAuditLog({
       actorId: ctx.userId,
@@ -81,7 +87,8 @@ export async function POST(req: Request) {
       entityId: weekOfISO,
       targetId: weekOfISO,
       targetName: weekOfISO,
-      meta: { dayCount: normDays.length, isPublished: !!isPublished, source: doc.source?.type }
+      meta: { dayCount: normDays.length, isPublished: !!isPublished, source: doc.source?.type },
+      tenantId: tenant.tenantId
     })
     return NextResponse.json({ ok: true, menu: doc })
   } catch (e:any) {

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { TenantSelector } from "@/components/ui/tenant-selector"
 import { Utensils, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useToast } from "@/hooks/use-toast"
@@ -23,6 +24,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   })
+  const [selectedTenant, setSelectedTenant] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -45,7 +47,7 @@ export default function RegisterPage() {
   }
 
   const validateForm = () => {
-    if (!formData.identityNumber || !formData.fullName || !formData.phone || !formData.password) {
+    if (!formData.identityNumber || !formData.fullName || !formData.phone || !formData.password || !selectedTenant) {
       return "Lütfen tüm alanları doldurun"
     }
 
@@ -90,6 +92,7 @@ export default function RegisterPage() {
       fullName: formData.fullName,
       phone: formData.phone,
       password: formData.password,
+      tenantSlug: selectedTenant,
     })
 
     if (success) {
@@ -130,6 +133,19 @@ export default function RegisterPage() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="tenant" className="text-gray-200">
+                Firma
+              </Label>
+              <TenantSelector
+                value={selectedTenant}
+                onValueChange={setSelectedTenant}
+                placeholder="Firmanızı seçin..."
+                className="w-full"
+                disabled={!!systemSettings?.maintenanceMode}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="identityNumber" className="text-gray-200">
                 Kimlik/Pasaport Numarası

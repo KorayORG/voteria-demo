@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { parseUserFromHeaders } from "@/lib/auth-headers";
+import { resolveTenant } from '@/lib/tenant'
+import { addAuditLog } from '@/lib/audit'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await req.json();
     const { id } = params;
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
+  const tenant = resolveTenant()
+  const client = await clientPromise;
+  const db = client.db();
     const usersCol = db.collection("users");
 
   const updates: any = { ...body };
@@ -18,8 +21,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (updates.activeTo) updates.activeTo = new Date(updates.activeTo);
 
     const result = await usersCol.findOneAndUpdate(
-      { _id: new ObjectId(id) },
-      { $set: updates },
+      { _id: new ObjectId(id), $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] },
+      { $set: { ...updates, tenantId: tenant.tenantId } },
       { returnDocument: "after" }
     );
 
@@ -34,7 +37,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (actorUser) actorIdentityNumber = (actorUser as any).identityNumber
     }
     const targetIdentityNumber = (result as any)?.identityNumber || updates.identityNumber
-    await db.collection("audit_logs").insertOne({
+    await addAuditLog({
       actorId: headerCtx.userId || body.actorId || "system",
       actorName: body.actorName || "Sistem",
       actorIdentityNumber,
@@ -45,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       targetName: (result as any)?.fullName || updates.fullName,
       targetIdentityNumber,
       meta: updates,
-      createdAt: new Date(),
+      tenantId: tenant.tenantId
     });
 
     return NextResponse.json({ success: true });
@@ -58,10 +61,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
+  const tenant = resolveTenant()
+  const client = await clientPromise;
+  const db = client.db();
     const usersCol = db.collection("users");
-    const user = await usersCol.findOne({ _id: new ObjectId(id) });
+  const user = await usersCol.findOne({ _id: new ObjectId(id), $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] });
     if (!user) return NextResponse.json({ error: "Kullanıcı bulunamadı" }, { status: 404 });
 
   await usersCol.deleteOne({ _id: new ObjectId(id) });
@@ -72,7 +76,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
       const actorUser = await usersCol.findOne({ _id: new ObjectId(headerCtx.userId) }).catch(()=>null)
       if (actorUser) actorIdentityNumber = (actorUser as any).identityNumber
     }
-    await db.collection("audit_logs").insertOne({
+    await addAuditLog({
       actorId: headerCtx.userId || "system",
       actorName: "Sistem",
       actorIdentityNumber,
@@ -80,10 +84,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
       entity: "User",
       entityId: user._id,
       targetId: user._id,
-      targetName: user.fullName,
-      targetIdentityNumber: user.identityNumber,
-      meta: { identityNumber: user.identityNumber, fullName: user.fullName },
-      createdAt: new Date(),
+      targetName: (user as any).fullName,
+      targetIdentityNumber: (user as any).identityNumber,
+      meta: { identityNumber: (user as any).identityNumber, fullName: (user as any).fullName },
+      tenantId: tenant.tenantId
     });
 
     return NextResponse.json({ success: true });

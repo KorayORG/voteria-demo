@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { resolveTenant } from '@/lib/tenant'
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,10 +10,11 @@ export async function GET(req: NextRequest) {
     const priority = searchParams.get("priority");
     const search = searchParams.get("search");
   const viewerId = searchParams.get("viewerId");
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
+  const tenant = resolveTenant()
+  const client = await clientPromise;
+  const db = client.db();
     const col = db.collection("suggestions");
-    const q: any = {};
+  const q: any = { $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] };
     if (category) q.category = category;
     if (status) q.status = status;
     if (priority) q.priority = priority;
@@ -39,13 +41,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+  const tenant = resolveTenant()
+  const body = await req.json();
     const { title, description, category, priority, submittedByUserId, submittedByName, tags = [] } = body;
     if (!title || !description) {
       return NextResponse.json({ error: "Başlık ve açıklama zorunlu" }, { status: 400 });
     }
     const client = await clientPromise;
-    const db = client.db("cafeteria");
+    const db = client.db();
     const col = db.collection("suggestions");
     const doc = {
       title,
@@ -63,6 +66,7 @@ export async function POST(req: NextRequest) {
       votesCount: 0,
       voterIds: [],
       tags,
+      tenantId: tenant.tenantId
     };
     const result = await col.insertOne(doc);
     return NextResponse.json({ success: true, id: result.insertedId });

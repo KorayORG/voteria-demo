@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import clientPromise from '@/lib/mongodb'
+import { resolveTenant } from '@/lib/tenant'
 
 function getMondayOfISOWeek(week: string) {
   // week format: YYYY-Www
@@ -20,11 +21,12 @@ export async function GET(req: NextRequest) {
     const week = searchParams.get('week')
     const shiftId = searchParams.get('shift')
     if (!week) return NextResponse.json({ error: 'week param gerekli' }, { status: 400 })
-    const client = await clientPromise
-    const db = client.db('cafeteria')
-    const votesCol = db.collection('votes')
+  const tenant = resolveTenant()
+  const client = await clientPromise
+  const db = client.db()
+  const votesCol = db.collection('votes')
 
-    const findQuery: any = { weekOfISO: week }
+  const findQuery: any = { weekOfISO: week, $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] }
     if (shiftId) findQuery.shiftId = shiftId
     const votes = await votesCol.find(findQuery).project({ date: 1, choice: 1 }).toArray()
     const byDate: Record<string, { traditional: number; alternative: number }> = {}

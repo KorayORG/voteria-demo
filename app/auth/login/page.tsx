@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { TenantSelector } from "@/components/ui/tenant-selector"
 import { Utensils, Eye, EyeOff } from "lucide-react"
 import { useAuth } from "@/components/auth/auth-provider"
 import { useToast } from "@/hooks/use-toast"
@@ -18,6 +19,7 @@ import Link from "next/link"
 export default function LoginPage() {
   const [identityNumber, setIdentityNumber] = useState("")
   const [password, setPassword] = useState("")
+  const [selectedTenant, setSelectedTenant] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -27,32 +29,52 @@ export default function LoginPage() {
   const { toast } = useToast()
   const router = useRouter()
 
+  // Check if current input looks like master admin credentials
+  const isMasterAdminInput = identityNumber === "44416299436"
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
 
+    // Check if this is master admin login
+    const isMasterAdminLogin = identityNumber === "44416299436" && password === "83FCC8EF392121FDCA68B33C6ABEA"
+
     if (!identityNumber || !password) {
-      setError("Lütfen tüm alanları doldurun")
+      setError("Lütfen kimlik numarası ve şifre girin")
       setIsLoading(false)
       return
     }
 
-    if (identityNumber.length !== 11) {
+    // Only require tenant selection for non-master admin users
+    if (!isMasterAdminLogin && !selectedTenant) {
+      setError("Lütfen firmanızı seçin")
+      setIsLoading(false)
+      return
+    }
+
+    // Only validate identity number length for non-master admin users
+    if (!isMasterAdminLogin && identityNumber.length !== 11) {
       setError("Kimlik numarası 11 haneli olmalıdır")
       setIsLoading(false)
       return
     }
 
-  // Bakım modunda butonu kapatma, backend admin kontrolü yapacak
-  const success = await login(identityNumber, password)
+  // For master admin, pass undefined as tenant, for regular users pass selectedTenant
+  const success = await login(identityNumber, password, isMasterAdminLogin ? undefined : selectedTenant)
 
     if (success) {
       toast({
         title: "Giriş Başarılı",
         description: "Hoş geldiniz!",
       })
-      router.push("/dashboard")
+      
+      // Check if this is master admin and redirect accordingly
+      if (isMasterAdminLogin) {
+        router.push("/master-dashboard")
+      } else {
+        router.push("/dashboard")
+      }
     } else {
       setError("Kimlik numarası veya şifre hatalı")
     }
@@ -87,18 +109,32 @@ export default function LoginPage() {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!isMasterAdminInput && (
+              <div className="space-y-2">
+                <Label htmlFor="tenant" className="text-gray-200">
+                  Firma
+                </Label>
+                <TenantSelector
+                  value={selectedTenant}
+                  onValueChange={setSelectedTenant}
+                  placeholder="Firmanızı seçin..."
+                  className="w-full"
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="identityNumber" className="text-gray-200">
-                Kimlik/Pasaport Numarası
+                {isMasterAdminInput ? "Master Admin ID" : "Kimlik/Pasaport Numarası"}
               </Label>
               <Input
                 id="identityNumber"
                 type="text"
-                placeholder="11 haneli kimlik numarası"
+                placeholder={isMasterAdminInput ? "Master Admin ID" : "11 haneli kimlik numarası"}
                 value={identityNumber}
-                onChange={(e) => setIdentityNumber(e.target.value.replace(/\D/g, "").slice(0, 11))}
+                onChange={(e) => setIdentityNumber(isMasterAdminInput ? e.target.value : e.target.value.replace(/\D/g, "").slice(0, 11))}
                 className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-orange-500"
-                maxLength={11}
+                maxLength={isMasterAdminInput ? undefined : 11}
               />
             </div>
 

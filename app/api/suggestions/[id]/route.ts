@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { parseUserFromHeaders, requireRole } from "@/lib/auth-headers";
 import { ObjectId } from "mongodb";
+import { resolveTenant } from '@/lib/tenant'
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -10,8 +11,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!authz.ok) return NextResponse.json({ error: authz.error }, { status: 403 });
     const body = await req.json();
     const { id } = params;
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
+  const tenant = resolveTenant()
+  const client = await clientPromise;
+  const db = client.db();
     const col = db.collection("suggestions");
     const updates: any = {};
     if (body.status) updates.status = body.status;
@@ -29,7 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       updates.isRead = false;
       updates.readAt = null;
     }
-    const r = await col.findOneAndUpdate({ _id: new ObjectId(id) }, { $set: updates }, { returnDocument: "after" });
+  const r = await col.findOneAndUpdate({ _id: new ObjectId(id), $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] }, { $set: { ...updates, tenantId: tenant.tenantId } }, { returnDocument: "after" });
     if (!r) return NextResponse.json({ error: "Bulunamadı" }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (e) {

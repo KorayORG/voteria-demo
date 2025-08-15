@@ -30,13 +30,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // Load palette from system settings (server component)
   let paletteVars: string[] = []
   let activeTheme: string | undefined
+  let maintenanceBanner: { message?: string; until?: Date|null } | null = null
   try {
     const client = await clientPromise
     const db = client.db('cafeteria')
-    const settings = await db.collection('system_settings').findOne({ id: 'core' })
+    const settings = await db.collection('system_settings').findOne({ id: 'core', tenantId: 'global' }) || await db.collection('system_settings').findOne({ id: 'core' })
     const colors: string[] = settings?.paletteColors || []
     paletteVars = colors.map((c, idx) => `--palette-${idx + 1}: ${c};`)
     activeTheme = settings?.activeTheme
+    if (settings?.maintenanceMode) {
+      maintenanceBanner = { message: settings.maintenanceMessage, until: settings.maintenanceUntil || null }
+    }
   } catch {}
   return (
     <html lang="tr" className={`${inter.variable} ${poppins.variable} antialiased`}>
@@ -52,6 +56,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {activeTheme === 'ramadan' && 'Ramazan Ayı Mübarek Olsun'}
             {activeTheme === 'newyear' && 'Mutlu Yıllar'}
             {activeTheme === 'spring' && 'Bahar Hoş Geldi'}
+          </div>
+        )}
+        {maintenanceBanner && (
+          <div className="w-full text-center text-xs md:text-sm py-1.5 tracking-wide font-medium bg-yellow-600 text-black shadow z-50 flex flex-col gap-0">
+            <span>{maintenanceBanner.message || 'Sistem bakım modunda. Sadece yetkili kullanıcılar tam erişime sahip.'}</span>
+            {maintenanceBanner.until && <span className="text-[10px] opacity-80">Bitiş: {new Date(maintenanceBanner.until).toLocaleString()}</span>}
           </div>
         )}
         <AuthProvider>

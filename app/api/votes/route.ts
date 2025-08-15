@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { parseUserFromHeaders, requirePermission, resolvePermissions } from "@/lib/auth-headers";
+import { resolveTenant } from '@/lib/tenant'
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,10 +16,11 @@ export async function GET(req: NextRequest) {
       const perm = requirePermission(ctx, 'canVote')
       if (!perm.ok) return NextResponse.json({ error: perm.error }, { status: 403 })
     }
-    const client = await clientPromise;
-    const db = client.db("cafeteria");
+  const tenant = resolveTenant()
+  const client = await clientPromise;
+  const db = client.db();
     const col = db.collection("votes");
-    const docs = await col.find({ userId, weekOfISO }).toArray();
+  const docs = await col.find({ userId, weekOfISO, $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] }).toArray();
     return NextResponse.json({ votes: docs });
   } catch (e) {
     console.error("GET /api/votes", e);
@@ -35,15 +37,16 @@ export async function POST(req: NextRequest) {
     if (!userId || !date || !weekOfISO || !shiftId || !choice) {
       return NextResponse.json({ error: "Eksik bilgi" }, { status: 400 });
     }
+    const tenant = resolveTenant()
     const client = await clientPromise;
-    const db = client.db("cafeteria");
+    const db = client.db();
     const col = db.collection("votes");
     const usersCol = db.collection("users");
-    const existing = await col.findOne({ userId, date });
+    const existing = await col.findOne({ userId, date, $or:[ { tenantId: tenant.tenantId }, { tenantId: { $exists:false } } ] });
     if (existing) {
-      await col.updateOne({ _id: existing._id }, { $set: { choice, shiftId, updatedAt: new Date() } });
+      await col.updateOne({ _id: existing._id }, { $set: { choice, shiftId, updatedAt: new Date(), tenantId: tenant.tenantId } });
     } else {
-      await col.insertOne({ userId, date, weekOfISO, shiftId, choice, createdAt: new Date(), updatedAt: new Date() });
+      await col.insertOne({ userId, date, weekOfISO, shiftId, choice, createdAt: new Date(), updatedAt: new Date(), tenantId: tenant.tenantId });
     }
     try {
       const userObjectId = ObjectId.isValid(userId) ? new ObjectId(userId) : null;

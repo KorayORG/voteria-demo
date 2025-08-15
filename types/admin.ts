@@ -1,5 +1,7 @@
 export interface SystemSettings {
   id: string
+  /** Multi-tenant */
+  tenantId?: string
   siteTitle: string
   maintenanceMode: boolean
   voteCutoffTime?: string
@@ -13,6 +15,7 @@ export interface SystemSettings {
 
 export interface ExternalAdjustment {
   id: string
+  tenantId?: string
   date: Date
   shiftId: string
   addAbsolute?: number
@@ -24,6 +27,7 @@ export interface ExternalAdjustment {
 
 export interface AuditLog {
   id: string
+  tenantId?: string
   actorId: string
   actorName: string
   actorIdentityNumber?: string
@@ -54,6 +58,7 @@ export interface RolePermissionSet {
 
 export interface RoleDef {
   id: string
+  tenantId?: string
   name: string
   code?: string
   color?: string

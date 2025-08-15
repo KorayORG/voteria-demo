@@ -3,6 +3,7 @@ import clientPromise from '@/lib/mongodb'
 import { parseUserFromHeaders, requireRole } from '@/lib/auth-headers'
 import { addAuditLog } from '@/lib/audit'
 import { ObjectId } from 'mongodb'
+import { resolveTenant } from '@/lib/tenant'
 
 // NOTE: This is a scaffold. Actual PDF parsing will be implemented later.
 // Endpoint supports two modes:
@@ -59,6 +60,7 @@ async function parsePdfToMenu(fileBuffer: Buffer) {
 
 export async function POST(req: Request) {
   const url = new URL(req.url)
+  const tenant = resolveTenant()
   const commit = url.searchParams.get('commit') === 'true'
   const ctx = parseUserFromHeaders(req.headers as any)
   const authz = requireRole(ctx, ['admin','kitchen'])
@@ -106,7 +108,8 @@ export async function POST(req: Request) {
     createdAt: new Date().toISOString(),
     createdBy: ctx.userId || 'system',
     updatedAt: new Date().toISOString(),
-    updatedBy: ctx.userId || 'system'
+    updatedBy: ctx.userId || 'system',
+    tenantId: tenant.tenantId
   }
   await db.collection(COLLECTION).updateOne({ weekOfISO }, { $set: doc }, { upsert: true })
   let actorIdentityNumber: string | undefined
@@ -122,7 +125,8 @@ export async function POST(req: Request) {
     entityId: weekOfISO,
     targetId: weekOfISO,
     targetName: weekOfISO,
-    meta: { dayCount: (parsed.days||[]).length, commit, source: 'pdf-import' }
+    meta: { dayCount: (parsed.days||[]).length, commit, source: 'pdf-import' },
+    tenantId: tenant.tenantId
   })
   return NextResponse.json({ ok: true, menu: doc, committed: true })
 }

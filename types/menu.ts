@@ -42,6 +42,8 @@ export interface StoredMenuDay {
 
 export interface StoredMenuDocument {
   _id?: string
+  /** Multi-tenant (optional during transition) */
+  tenantId?: string
   weekOfISO: string
   days: StoredMenuDay[]
   isPublished: boolean
@@ -64,6 +66,8 @@ export interface Shift {
 
 export interface Vote {
   id: string
+  /** Multi-tenant */
+  tenantId?: string
   userId: string
   date: Date
   weekOfISO: string
