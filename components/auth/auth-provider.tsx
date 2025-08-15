@@ -1,36 +1,26 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-
-export type UserRole = "member" | "kitchen" | "admin"
-
-export interface User {
-  id: string
-  identityNumber: string
-  fullName: string
-  phone: string
-  role: UserRole | 'master-admin'
-  isActive: boolean
-  tenantId?: string
-  activeFrom?: Date
-  activeTo?: Date
-}
+import type { UserSession } from "@/types/user"
 
 interface AuthContextType {
-  user: User | null
+  user: UserSession | null
   login: (identityNumber: string, password: string, tenantSlug?: string) => Promise<boolean>
   register: (data: RegisterData) => Promise<boolean>
   logout: () => void
+  switchTenant: (tenantSlug: string) => Promise<boolean>
   loading: boolean
+  currentTenant: string
+  availableTenants: string[]
 }
 
 interface RegisterData {
   identityNumber: string
   fullName: string
   phone: string
+  email?: string
   password: string
   tenantSlug?: string
 }
@@ -38,46 +28,41 @@ interface RegisterData {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserSession | null>(null)
   const [loading, setLoading] = useState(true)
+  const [currentTenant, setCurrentTenant] = useState("secye")
+  const [availableTenants, setAvailableTenants] = useState<string[]>([])
   const router = useRouter()
 
   useEffect(() => {
-    // Check for existing session
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem("auth_token")
-        const userData = localStorage.getItem("user_data")
-        const isMasterAdmin = localStorage.getItem("is_master_admin") === "true"
-        
-        if (token && userData) {
-          try {
-            const parsedUser = JSON.parse(userData)
-            if (isMasterAdmin) {
-              parsedUser.role = 'master-admin'
-            }
-            setUser(parsedUser)
-            
-            // Redirect master admin to master dashboard
-            if (isMasterAdmin && window.location.pathname === '/dashboard') {
-              router.push('/master-dashboard')
-            }
-          } catch (error) {
-            console.error('Error parsing user data:', error)
-            localStorage.removeItem("auth_token")
-            localStorage.removeItem("user_data")
-            localStorage.removeItem("is_master_admin")
-          }
-        }
-      } catch (error) {
-        console.error("Auth check failed:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     checkAuth()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch("/api/auth/me", {
+        credentials: "include",
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUser(data.user)
+        setCurrentTenant(data.user.currentTenant)
+        setAvailableTenants(Object.keys(data.user.rolesByTenant || {}))
+
+        // Redirect based on role and tenant
+        if (data.user.currentRole === "master" && data.user.currentTenant === "secye") {
+          if (window.location.pathname === "/dashboard") {
+            router.push("/master-dashboard")
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Auth check failed:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const login = async (identityNumber: string, password: string, tenantSlug?: string): Promise<boolean> => {
     try {
@@ -85,24 +70,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ identityNumber, password, tenantSlug }),
       })
+
       if (!res.ok) return false
+
       const data = await res.json()
       if (!data.success) return false
-      localStorage.setItem("auth_token", data.token)
-      localStorage.setItem("user_data", JSON.stringify(data.user))
+
       setUser(data.user)
-      
-      // Redirect master admin to special dashboard
-      if (data.isMasterAdmin) {
-        localStorage.setItem("is_master_admin", "true")
-        // Update user role for master admin
-        const masterUser = { ...data.user, role: 'master-admin' }
-        setUser(masterUser)
-        localStorage.setItem("user_data", JSON.stringify(masterUser))
-      }
-      
+      setCurrentTenant(data.user.currentTenant)
+      setAvailableTenants(Object.keys(data.user.rolesByTenant || {}))
+
       return true
     } catch (error) {
       console.error("Login failed:", error)
@@ -118,23 +98,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       })
+
       if (!res.ok) return false
+
       const resp = await res.json()
       if (!resp.success) return false
-      const newUser: User = {
-        id: resp.userId,
-        identityNumber: data.identityNumber,
-        fullName: data.fullName,
-        phone: data.phone,
-        role: "member",
-        isActive: true,
-      }
-      localStorage.setItem("auth_token", `tok_${resp.userId}`)
-      localStorage.setItem("user_data", JSON.stringify(newUser))
-      setUser(newUser)
-      return true
+
+      // Auto-login after successful registration
+      return await login(data.identityNumber, data.password, data.tenantSlug)
     } catch (error) {
       console.error("Registration failed:", error)
       return false
@@ -143,16 +117,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem("auth_token")
-    localStorage.removeItem("user_data")
-    localStorage.removeItem("is_master_admin")
+  const switchTenant = async (tenantSlug: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/auth/switch-tenant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ tenantSlug }),
+      })
+
+      if (!res.ok) return false
+
+      const data = await res.json()
+      if (!data.success) return false
+
+      setUser(data.user)
+      setCurrentTenant(data.user.currentTenant)
+
+      // Redirect based on new role
+      if (data.user.currentRole === "master" && tenantSlug === "secye") {
+        router.push("/master-dashboard")
+      } else {
+        router.push("/dashboard")
+      }
+
+      return true
+    } catch (error) {
+      console.error("Tenant switch failed:", error)
+      return false
+    }
+  }
+
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+    } catch (error) {
+      console.error("Logout failed:", error)
+    }
+
     setUser(null)
-  fetch('/api/auth/logout', { method:'POST' })
+    setCurrentTenant("secye")
+    setAvailableTenants([])
     router.push("/auth/login")
   }
 
-  return <AuthContext.Provider value={{ user, login, register, logout, loading }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        logout,
+        switchTenant,
+        loading,
+        currentTenant,
+        availableTenants,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

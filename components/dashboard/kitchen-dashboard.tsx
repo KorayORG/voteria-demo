@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChefHat, BarChart3, MessageSquare, Calendar, TrendingUp, Users, Plus } from "lucide-react"
+import { ChefHat, BarChart3, MessageSquare, Calendar, Users, Plus, Utensils } from "lucide-react"
 import { useKitchenData } from "@/hooks/use-kitchen-data"
 import { StatisticsCharts } from "@/components/kitchen/statistics-charts"
 import { SuggestionsInbox } from "@/components/kitchen/suggestions-inbox"
@@ -12,7 +12,8 @@ import { MenuManagement } from "@/components/kitchen/menu-management"
 import { WeeklyOverview } from "@/components/kitchen/weekly-overview"
 
 export function KitchenDashboard() {
-  const { weekStatistics, suggestions, loading, getUnreadSuggestionsCount, markSuggestionAsRead, refreshData } = useKitchenData()
+  const { weekStatistics, suggestions, loading, getUnreadSuggestionsCount, markSuggestionAsRead, refreshData } =
+    useKitchenData()
   const [activeTab, setActiveTab] = useState("overview")
 
   const unreadCount = getUnreadSuggestionsCount()
@@ -25,13 +26,25 @@ export function KitchenDashboard() {
     )
   }
 
+  const totalProductionTraditional =
+    weekStatistics?.days.reduce(
+      (sum, day) => sum + day.traditional.votes + (day.externalAdjustment?.traditional || 0),
+      0,
+    ) || 0
+  const totalProductionAlternative =
+    weekStatistics?.days.reduce(
+      (sum, day) => sum + day.alternative.votes + (day.externalAdjustment?.alternative || 0),
+      0,
+    ) || 0
+  const totalProduction = totalProductionTraditional + totalProductionAlternative
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Mutfak Paneli</h1>
-          <p className="text-gray-300">Haftalık istatistikler ve menü yönetimi</p>
+          <p className="text-gray-300">Haftalık istatistikler, üretim planlama ve menü yönetimi</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-gray-300">
@@ -51,7 +64,7 @@ export function KitchenDashboard() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{weekStatistics?.totalVotes || 0}</p>
-                <p className="text-sm text-gray-400">Toplam Oy</p>
+                <p className="text-sm text-gray-400">Sistem Oyları</p>
               </div>
             </div>
           </CardContent>
@@ -61,11 +74,11 @@ export function KitchenDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-white" />
+                <Utensils className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{weekStatistics?.averageParticipation || 0}</p>
-                <p className="text-sm text-gray-400">Günlük Ortalama</p>
+                <p className="text-2xl font-bold text-white">{totalProduction}</p>
+                <p className="text-sm text-gray-400">Toplam Üretim</p>
               </div>
             </div>
           </CardContent>
@@ -78,8 +91,8 @@ export function KitchenDashboard() {
                 <BarChart3 className="h-6 w-6 text-white" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">7</p>
-                <p className="text-sm text-gray-400">Aktif Menü</p>
+                <p className="text-2xl font-bold text-white">{weekStatistics?.averageParticipation || 0}</p>
+                <p className="text-sm text-gray-400">Günlük Ortalama</p>
               </div>
             </div>
           </CardContent>
@@ -132,7 +145,7 @@ export function KitchenDashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <WeeklyOverview weekStatistics={weekStatistics} />
+          <WeeklyOverview weekStatistics={weekStatistics} onRefresh={refreshData} />
         </TabsContent>
 
         <TabsContent value="statistics" className="space-y-6">
@@ -140,7 +153,12 @@ export function KitchenDashboard() {
         </TabsContent>
 
         <TabsContent value="suggestions" className="space-y-6">
-          <SuggestionsInbox suggestions={suggestions} onMarkRead={async (id: string) => { await markSuggestionAsRead(id) }} />
+          <SuggestionsInbox
+            suggestions={suggestions}
+            onMarkRead={async (id: string) => {
+              await markSuggestionAsRead(id)
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="menu" className="space-y-6">

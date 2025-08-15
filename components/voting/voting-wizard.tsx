@@ -1,14 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { ChevronLeft, ChevronRight, Clock, Calendar, Check } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ChevronLeft, ChevronRight, Clock, Calendar, Check, AlertTriangle, Lock } from "lucide-react"
 import { useVoting } from "@/hooks/use-voting"
 import { getWeekDays, getShortWeekDays } from "@/lib/menu-data"
 import { ShiftSelector } from "./shift-selector"
 import { DayVoting } from "./day-voting"
+import { useToast } from "@/hooks/use-toast"
 
 export function VotingWizard() {
   const {
@@ -21,11 +23,60 @@ export function VotingWizard() {
     submitVote,
     getVoteForDay,
     getCompletionPercentage,
+    isVotingLocked,
+    lockVotes,
   } = useVoting()
 
   const [currentStep, setCurrentStep] = useState(0)
+  const [showLockConfirm, setShowLockConfirm] = useState(false)
+  const { toast } = useToast()
+
   const weekDays = getWeekDays()
   const shortWeekDays = getShortWeekDays()
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target && (e.target as HTMLElement).tagName === "INPUT") return
+
+      if (e.key === "ArrowUp" && currentStep > 0) {
+        e.preventDefault()
+        setCurrentStep(currentStep - 1)
+      } else if (e.key === "ArrowDown" && currentStep < 6) {
+        e.preventDefault()
+        setCurrentStep(currentStep + 1)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [currentStep])
+
+  useEffect(() => {
+    if (votingProgress && currentWeekMenu) {
+      const draftKey = `voting_draft_${currentWeekMenu.weekOfISO}_${votingProgress.shiftId}`
+      const draft = {
+        currentStep,
+        lastUpdated: new Date().toISOString(),
+      }
+      localStorage.setItem(draftKey, JSON.stringify(draft))
+    }
+  }, [currentStep, votingProgress, currentWeekMenu])
+
+  // Load draft on mount
+  useEffect(() => {
+    if (votingProgress && currentWeekMenu) {
+      const draftKey = `voting_draft_${currentWeekMenu.weekOfISO}_${votingProgress.shiftId}`
+      const savedDraft = localStorage.getItem(draftKey)
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft)
+          setCurrentStep(draft.currentStep || 0)
+        } catch (error) {
+          console.error("Failed to load draft:", error)
+        }
+      }
+    }
+  }, [votingProgress, currentWeekMenu])
 
   if (loading) {
     return (
@@ -47,7 +98,6 @@ export function VotingWizard() {
     )
   }
 
-  // If no shifts at all
   if (!shifts || shifts.length === 0) {
     return (
       <div className="p-4 sm:p-6">
@@ -63,7 +113,6 @@ export function VotingWizard() {
     )
   }
 
-  // If no shift selected, show shift selector
   if (!selectedShift) {
     return (
       <div className="p-4 sm:p-6">
@@ -73,7 +122,32 @@ export function VotingWizard() {
   }
 
   const handleDayVote = (choice: "traditional" | "alternative") => {
+    if (isVotingLocked) {
+      toast({
+        title: "Oylar Kilitli",
+        description: "Oylarınız kilitlenmiş durumda, değişiklik yapamazsınız.",
+        variant: "destructive",
+      })
+      return
+    }
     submitVote(currentStep, choice)
+  }
+
+  const handleLockVotes = async () => {
+    const success = await lockVotes()
+    if (success) {
+      toast({
+        title: "Oylar Kilitlendi",
+        description: "Oylarınız başarıyla kilitlendi. Artık değişiklik yapamazsınız.",
+      })
+      setShowLockConfirm(false)
+    } else {
+      toast({
+        title: "Hata",
+        description: "Oylar kilitlenirken bir hata oluştu.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleNextStep = () => {
@@ -102,10 +176,25 @@ export function VotingWizard() {
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-2 text-glow">Haftalık Menü Oylaması</h1>
         <p className="text-gray-300 text-sm sm:text-base">
           Seçilen vardiya: <span className="text-orange-500 font-semibold">{selectedShift.label}</span>
+          {isVotingLocked && (
+            <span className="ml-2 inline-flex items-center gap-1 text-amber-400">
+              <Lock className="h-4 w-4" />
+              Kilitli
+            </span>
+          )}
         </p>
       </div>
 
-  <Card className="bg-gray-800/50 border-gray-700">
+      {isVotingLocked && (
+        <Alert className="bg-amber-900/20 border-amber-700">
+          <Lock className="h-4 w-4" />
+          <AlertDescription className="text-amber-200">
+            Oylarınız kilitlenmiş durumda. Artık değişiklik yapamazsınız.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="bg-gray-800/50 border-gray-700">
         <CardContent className="p-4 sm:p-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -113,9 +202,17 @@ export function VotingWizard() {
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
                 <span className="text-white font-medium text-sm sm:text-base">İlerleme Durumu</span>
               </div>
-              <span className="text-xs sm:text-sm text-gray-300">
-                {votingProgress?.completedDays.length || 0}/7 gün
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs sm:text-sm text-gray-300">
+                  {votingProgress?.completedDays.length || 0}/7 gün
+                </span>
+                {completionPercentage === 100 && !isVotingLocked && (
+                  <Button size="sm" variant="outline" onClick={() => setShowLockConfirm(true)} className="text-xs">
+                    <Lock className="h-3 w-3 mr-1" />
+                    Kilitle
+                  </Button>
+                )}
+              </div>
             </div>
 
             <Progress value={completionPercentage} className="h-2" />
@@ -152,7 +249,7 @@ export function VotingWizard() {
         </CardContent>
       </Card>
 
-  <Card className="bg-gray-800/50 border-gray-700">
+      <Card className="bg-gray-800/50 border-gray-700">
         <CardHeader className="text-center px-4 sm:px-6">
           <CardTitle className="text-lg sm:text-xl lg:text-2xl text-white">
             {weekDays[currentStep]} - {currentDayMenu.date.toLocaleDateString("tr-TR")}
@@ -165,7 +262,12 @@ export function VotingWizard() {
           </div>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
-          <DayVoting dayMenu={currentDayMenu} currentVote={currentVote} onVote={handleDayVote} />
+          <DayVoting
+            dayMenu={currentDayMenu}
+            currentVote={currentVote}
+            onVote={handleDayVote}
+            disabled={isVotingLocked}
+          />
         </CardContent>
       </Card>
 
@@ -192,14 +294,44 @@ export function VotingWizard() {
         </Button>
       </div>
 
-      {completionPercentage === 100 && (
+      {completionPercentage === 100 && !isVotingLocked && (
         <Card className="bg-green-900/20 border-green-700 glass-effect">
-          <CardContent className="p-4 sm:p-6 text-center">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-3d">
+          <CardContent className="p-4 sm:p-6 text-center space-y-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto shadow-3d">
               <Check className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
             </div>
-            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Tebrikler!</h3>
-            <p className="text-green-200 text-sm sm:text-base">Bu hafta için tüm oylarınızı tamamladınız.</p>
+            <div>
+              <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Tebrikler!</h3>
+              <p className="text-green-200 text-sm sm:text-base mb-4">Bu hafta için tüm oylarınızı tamamladınız.</p>
+              <Button onClick={() => setShowLockConfirm(true)} className="bg-amber-600 hover:bg-amber-700 text-white">
+                <Lock className="h-4 w-4 mr-2" />
+                Oyları Kilitle
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Lock Confirmation Dialog */}
+      {showLockConfirm && (
+        <Card className="bg-amber-900/20 border-amber-700 glass-effect">
+          <CardContent className="p-4 sm:p-6 text-center space-y-4">
+            <AlertTriangle className="h-12 w-12 text-amber-400 mx-auto" />
+            <div>
+              <h3 className="text-lg font-bold text-white mb-2">Oyları Kilitle</h3>
+              <p className="text-amber-200 text-sm mb-4">
+                Oylarınızı kilitledikten sonra değişiklik yapamazsınız. Emin misiniz?
+              </p>
+              <div className="flex gap-2 justify-center">
+                <Button variant="outline" onClick={() => setShowLockConfirm(false)}>
+                  İptal
+                </Button>
+                <Button onClick={handleLockVotes} className="bg-amber-600 hover:bg-amber-700">
+                  <Lock className="h-4 w-4 mr-2" />
+                  Evet, Kilitle
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}

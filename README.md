@@ -14,5 +14,3 @@ Planned next phases:
 3. Tenant-aware caches & authorization hardening.
 
 Types: see `types/*.ts` (user, menu, admin, tenant).
-
-
